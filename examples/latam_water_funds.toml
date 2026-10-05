@@ -1,0 +1,62 @@
+# Illustrative attribution studies for Latin American watershed-investment programmes.
+#
+#     wiat extract --config examples/latam_water_funds.toml --project <your-ee-project> --out data
+#     wiat analyze --panel data/extrema/panel.csv --treatments data/extrema/treatments.csv \
+#                  --static data/extrema/static.csv --exclusions data/extrema/exclusions.csv \
+#                  --outcome et_mm --out reports/extrema
+#
+# Coordinates are approximate reference points inside each programme's target area,
+# and start years are programme launch years. Before drawing conclusions, replace both
+# with the actual intervention footprints (e.g. contracted properties, restored
+# hectares) and the year land management actually changed. A programme's legal start
+# usually precedes on-the-ground change by years.
+#
+# Each study defines its own donor region. Donors should share the treated basin's
+# climate regime but lie outside its drainage network; hydrologically connected
+# basins are excluded automatically using HydroBASINS topology.
+
+[[studies]]
+name = "extrema"
+description = "Conservador das Aguas, Extrema (MG, Brazil): payments for ecosystem services, riparian restoration"
+region = [-47.5, -23.5, -45.0, -21.5]   # Serra da Mantiqueira / upper Jaguari-Piracicaba
+hydrobasins_level = 9
+start = "2001-01-01"
+end = "2025-01-01"
+freq = "month"
+scale = 250
+sensors = ["L5", "L7", "L8", "L9", "S2"]
+  [[studies.interventions]]
+  name = "Extrema - Posses sub-basin"
+  lon = -46.25
+  lat = -22.88
+  start = "2007-01-01"
+
+[[studies]]
+name = "camboriu"
+description = "Produtor de Agua do Rio Camboriu (SC, Brazil)"
+region = [-49.6, -27.8, -48.4, -26.6]
+hydrobasins_level = 9
+start = "2001-01-01"
+end = "2025-01-01"
+scale = 250
+  [[studies.interventions]]
+  name = "Rio Camboriu headwaters"
+  lon = -48.78
+  lat = -27.06
+  start = "2013-01-01"
+
+[[studies]]
+name = "quito_paramo"
+description = "FONAG (Quito, Ecuador): paramo protection and restoration in water-supply catchments"
+region = [-79.2, -1.2, -77.6, 0.6]      # northern Ecuadorian Andes
+hydrobasins_level = 9
+start = "2001-01-01"
+end = "2025-01-01"
+scale = 250
+# Persistent cloud: expect sparse optical records; quality_mask() blanks months with
+# < 30% clear basin area, which can itself remove donors at the balancing step.
+  [[studies.interventions]]
+  name = "Papallacta / Antisana paramo"
+  lon = -78.15
+  lat = -0.36
+  start = "2005-01-01"
