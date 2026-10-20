@@ -43,20 +43,24 @@ conventional methods hide the cliff.
 
 Full write-up: [docs/where_attribution_fails.md](docs/where_attribution_fails.md).
 
-### On real basins (Extrema and Camboriú, Brazil)
+### On real basins (Extrema and Camboriú, Brazil; Quito, Ecuador)
 
-The same experiment on 293 real HydroBASINS units confirms the simulation:
+The same experiment on 454 real HydroBASINS units confirms the simulation:
 
-- **Camboriú: a bounded null.** The programme did not change basin ET by more than
-  about 10 mm/yr (≈ 0.9%) or NDVI by more than about 0.03.
+- **Camboriú and Quito: bounded nulls.** Camboriú's programme did not change basin
+  ET by more than about 10 mm/yr (≈ 0.9%). Quito's ET change lies between −40 and
+  +14 mm/yr.
 - **Extrema: not attributable.** The programme basin is more atypical than 96% of
   its region (elevation +2.7 SD, forest +2.3 SD), so it has 6 suitable donors. A
   typical basin in the same region has 92.
 - **Injecting known effects into every untreated basin:** cluster-robust DiD gives
-  38–83% false positives, and placebo methods hold 10%. Nothing is detectable below
-  9 donors. With 9 or more, a 5% ET change is found 87–100% of the time.
-- **Synthetic control with a 6-year baseline loses all power as donors are added**,
-  because placebos fit the short pre-period exactly.
+  34–83% false positives, and placebo methods hold 10%. Nothing is detectable below
+  9 donors. With 9 or more, a 5% ET change is found 87–100% of the time by DiD.
+- **Synthetic control with a short baseline loses all power as donors are added**,
+  because placebos fit the short pre-period exactly. With Quito's 4 pre-years it is
+  unusable at any donor count.
+- **Andean cloud makes NDVI attribution impossible in Quito:** only 13 of 161 basins
+  have a complete annual record.
 
 Write-up: [docs/latam_results.md](docs/latam_results.md).
 Methods: [docs/methodology.md](docs/methodology.md).

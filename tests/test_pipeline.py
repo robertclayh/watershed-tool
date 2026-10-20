@@ -161,3 +161,12 @@ def test_injection_experiment_recovers_effect_and_holds_size(sim):
     assert did4.ci_bounded == 0 and did4.power == 0  # below 9 donors nothing is attributable
     did12 = s[(s.estimator == "did_placebo") & (s.n_donors == 12)].iloc[0]
     assert did12.ci_bounded == 1 and did12.coverage >= 0.75
+
+
+def test_scm_overfit_flag_with_short_baseline():
+    s = simulate_watersheds(n_basins=40, n_years=12, treat_start={"B000": 2004}, seed=4)
+    rep = AttributionStudy(s.panel, "et_mm", {"B000": "2004-01-01"}, static=s.static, caliper=np.inf,
+                           hard_caliper=np.inf).run()
+    codes = [f.code for f in rep.flags]
+    assert len(rep.donors) > 9 and "SCM_OVERFIT" in codes
+    assert not np.isfinite(rep.scm["B000"].ci).all()

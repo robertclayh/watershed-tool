@@ -322,6 +322,14 @@ class AttributionStudy:
                                       f"{t}: {n_disc} placebo basin(s) fit their own pre-period too poorly "
                                       f"to be informative and were discarded. Only {len(donors) - n_disc} "
                                       f"remain, so SCM cannot reach p <= {self.alpha}."))
+                n_perfect = d.get("placebos_perfect_fit", 0)
+                if n_perfect and not np.all(np.isfinite(s.ci)) and J >= need["significance_possible"]:
+                    n_pre = int(np.sum(np.asarray(sorted(data[self.time].unique())) < starts[t]))
+                    flags.append(Flag("SCM_OVERFIT", MINOR,
+                                      f"{t}: {n_perfect} of {J} placebo basins reproduce their {n_pre}-period "
+                                      "baseline exactly, so no treated gap can look extreme and the SCM "
+                                      "interval is unbounded. Donors outnumber pre-periods: use fewer donors "
+                                      "or rely on DiD."))
                 if d["effective_donors"] < 2:
                     flags.append(Flag("CONCENTRATED_WEIGHTS", MINOR,
                                       f"{t}: synthetic control rests on ~{d['effective_donors']:.1f} "
