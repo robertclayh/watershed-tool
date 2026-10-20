@@ -196,6 +196,13 @@ def basin_at(lon: float, lat: float, level: int = 8):
     return fc.filterBounds(e.Geometry.Point([lon, lat])).first()
 
 
+def basins_by_id(ids, level: int = 12):
+    """HydroBASINS units at ``level`` with the given ``HYBAS_ID`` values."""
+    e = _ee()
+    fc = e.FeatureCollection(HYDROBASINS.format(level=int(level)))
+    return fc.filter(e.Filter.inList("HYBAS_ID", [int(i) for i in ids]))
+
+
 def basin_table(fc) -> pd.DataFrame:
     """Attribute table (id, downstream id, area) used for connectivity exclusion."""
     cols = ["HYBAS_ID", "NEXT_DOWN", "SUB_AREA"]
@@ -355,6 +362,44 @@ def load_export(path, min_clear: float = 0.3) -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values(["basin_id", "date"]).reset_index(drop=True)
     return add_hydrologic_outcomes(quality_mask(df, min_clear))
+
+
+def forest_loss_panel(fc, start_year: int = 2001, end_year: int = 2024, scale: float = 100,
+                      forest_threshold: float = 30) -> pd.DataFrame:
+    """Annual forest loss and remaining forest cover per basin from Hansen GFC.
+
+    Columns: ``forest_loss_frac`` (loss in the year as a share of the basin's 2000
+    forest) and ``forest_cover_frac`` (share of the basin still forested at the end
+    of the year, counting only 2000 forest; regrowth is not tracked). One reduction
+    covers every year, so this is cheap compared with the optical panel.
+    """
+    e = _ee()
+    gfc = e.Image(HANSEN)
+    forest = gfc.select("treecover2000").gte(forest_threshold)
+    # lossyear is masked where no loss occurred; unmasked, a basin mean would average
+    # over loss pixels only and report near-total loss for any basin with a little.
+    lossyear = gfc.select("lossyear").unmask(0)
+    years = list(range(int(start_year), int(end_year) + 1))
+    img = forest.rename("forest2000")
+    for y in years:
+        img = img.addBands(lossyear.eq(y - 2000).And(forest).rename(f"loss_{y}"))
+    red = img.reduceRegions(collection=fc.select(["HYBAS_ID"]), reducer=e.Reducer.mean(), scale=scale, tileScale=4)
+    wide = features_to_frame(red.map(lambda f: e.Feature(None, f.toDictionary())).getInfo())
+    return forest_frame(wide, years)
+
+
+def forest_frame(wide: pd.DataFrame, years) -> pd.DataFrame:
+    """Long annual forest panel from per-basin ``forest2000`` and ``loss_<year>`` shares."""
+    loss = wide.set_index("basin_id")[[f"loss_{y}" for y in years]]
+    loss.columns = list(years)
+    f0 = wide.set_index("basin_id")["forest2000"]
+    cover = f0.to_numpy()[:, None] - loss.cumsum(axis=1)
+    out = pd.DataFrame({
+        "forest_loss_frac": (loss.div(f0.replace(0, np.nan), axis=0)).stack(),
+        "forest_cover_frac": cover.stack(),
+    }).rename_axis(["basin_id", "year"]).reset_index()
+    out["date"] = pd.to_datetime(out.year.astype(str) + "-01-01")
+    return out[["basin_id", "date", "forest_loss_frac", "forest_cover_frac"]]
 
 
 def static_covariates(fc, scale: float = 250, forest_threshold: float = 30) -> pd.DataFrame:
