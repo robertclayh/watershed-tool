@@ -25,7 +25,7 @@ quality of the attribution is bounded by the quality and number of those basins.
 | `precip_mm` | CHIRPS v2 daily | Sum over the period. |
 | `et_mm`, `pet_mm` | MODIS MOD16A2GF v061 | 8-day sums → daily rates (short year-end composite handled) × days of overlap with the period. Fill values masked. |
 | `elevation_m`, `slope_deg` | NASADEM | Basin mean. |
-| `forest_frac`, `forest_loss_frac` | Hansen GFC v1.11 | Tree cover 2000, loss 2001–2023. |
+| `forest_frac`, `forest_loss_frac` | Hansen GFC v1.13 | Tree cover 2000, loss 2001–2025. |
 | basins, topology | HydroSHEDS HydroBASINS | Level 1–12 polygons; `NEXT_DOWN` used to exclude connected basins. |
 
 Derived outcomes (`wiat.panel.add_hydrologic_outcomes`):

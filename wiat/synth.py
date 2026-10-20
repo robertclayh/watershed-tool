@@ -257,18 +257,24 @@ def synthetic_control(
                 }
             )
         pl = pd.DataFrame(rows).set_index(unit)
+        # A placebo that reproduces its pre-period exactly (common when donors outnumber
+        # pre-periods) has a pre-RMSPE at rounding-error level. Its standardised statistic
+        # is infinite, not ~1e13, and must be treated as such.
+        perfect = pl.pre_rmspe <= 1e-9 * max(float(np.nanstd(Y0[pre])), 1e-12)
+        pl.loc[perfect, "ratio"] = np.inf
         pl["kept"] = True
         if placebo_fit_cutoff is not None:
             pl["kept"] = pl.pre_rmspe <= placebo_fit_cutoff * max(main.pre_rmspe, 1e-12)
         kept = pl[pl.kept]
         ratio = main.post_rmspe / max(main.pre_rmspe, 1e-12)
-        pl["att_stat"] = pl.att.abs() / pl.pre_rmspe.clip(lower=1e-12)
+        pl["att_stat"] = np.where(perfect, np.inf, pl.att.abs() / pl.pre_rmspe.clip(lower=1e-12))
         kept = pl[pl.kept]
         stat = abs(att) / max(main.pre_rmspe, 1e-12)
         res.p_value = float((1 + np.sum(kept.att_stat >= stat)) / (1 + len(kept)))
         res.p_value_rmspe = float((1 + np.sum(kept.ratio >= ratio)) / (1 + len(kept)))
         res.min_attainable_p = 1.0 / (1 + len(kept))
         res.diagnostics["placebos_discarded"] = int((~pl.kept).sum())
+        res.diagnostics["placebos_perfect_fit"] = int(perfect.sum())
         res.ci = placebo_inverted_interval(att, main.pre_rmspe, kept.att_stat.to_numpy(), alpha)
         res.placebo = pl
         res.placebo_gaps = pd.DataFrame(gaps, index=times)
@@ -297,13 +303,18 @@ def placebo_inverted_interval(
     is the corresponding order statistic of the placebo distribution.
 
     The interval is ``(-inf, inf)`` when ``alpha * (J + 1) <= 1``: with fewer than
-    ``1/alpha - 1`` usable donors, the data cannot rule out *any* effect size.
+    ``1/alpha - 1`` usable donors, the data cannot rule out *any* effect size. It is
+    also unbounded when the critical placebo statistic is infinite, i.e. enough
+    placebos fit their pre-period exactly that no shift of the treated gap can be
+    more extreme than them.
     """
     J = len(placebo_stats)
     m = int(np.floor(alpha * (J + 1) - 1 + 1e-9)) + 1
     if m <= 0:
         return (-np.inf, np.inf)
     c = float(np.sort(np.asarray(placebo_stats))[::-1][m - 1])
+    if not np.isfinite(c):
+        return (-np.inf, np.inf)
     return (att - c * pre_rmspe, att + c * pre_rmspe)
 
 

@@ -42,7 +42,7 @@ COUNTRIES = "USDOS/LSIB_SIMPLE/2017"
 CHIRPS = "UCSB-CHG/CHIRPS/DAILY"
 MOD16 = "MODIS/061/MOD16A2GF"
 NASADEM = "NASA/NASADEM_HGT/001"
-HANSEN = "UMD/hansen/global_forest_change_2023_v1_11"
+HANSEN = "UMD/hansen/global_forest_change_2025_v1_13"
 S2 = "COPERNICUS/S2_SR_HARMONIZED"
 LANDSAT = {
     "L5": "LANDSAT/LT05/C02/T1_L2",
@@ -180,7 +180,7 @@ def basins(level: int = 8, region: Sequence[float] | None = None, country: str |
     e = _ee()
     if not 1 <= int(level) <= 12:
         raise ValueError("HydroBASINS level must be 1-12")
-    fc = e.FeatureCollection(HYDROBASINS.format(level=f"{int(level):02d}"))
+    fc = e.FeatureCollection(HYDROBASINS.format(level=int(level)))
     if region is not None:
         fc = fc.filterBounds(e.Geometry.Rectangle(list(region)))
     if country is not None:
@@ -192,7 +192,7 @@ def basins(level: int = 8, region: Sequence[float] | None = None, country: str |
 def basin_at(lon: float, lat: float, level: int = 8):
     """The HydroBASINS unit containing a point."""
     e = _ee()
-    fc = e.FeatureCollection(HYDROBASINS.format(level=f"{int(level):02d}"))
+    fc = e.FeatureCollection(HYDROBASINS.format(level=int(level)))
     return fc.filterBounds(e.Geometry.Point([lon, lat])).first()
 
 
@@ -216,7 +216,7 @@ def _indices(sr):
         {"n": sr.select("nir"), "r": sr.select("red"), "b": sr.select("blue")},
     ).rename("evi")
     ndmi = sr.normalizedDifference(["nir", "swir1"]).rename("ndmi")
-    return _ee().Image(ndvi.addBands([evi, ndmi]).copyProperties(sr, ["system:time_start"]))
+    return _ee().Image(ndvi.addBands([evi, ndmi]).toFloat().copyProperties(sr, ["system:time_start"]))
 
 
 def _landsat(sensor: str, geom, start, end, max_cloud: float):
@@ -260,7 +260,7 @@ def vegetation_composite(geom, start, end, sensors=PanelSpec.sensors, max_cloud:
     for s in sensors:
         c = _sentinel2(geom, start, end, max_cloud) if s == "S2" else _landsat(s, geom, start, end, max_cloud)
         col = c if col is None else col.merge(c)
-    empty = e.Image.constant([0, 0, 0]).rename(list(VEG_COLUMNS)).updateMask(0)
+    empty = e.Image.constant([0, 0, 0]).toFloat().rename(list(VEG_COLUMNS)).updateMask(0)
     comp = e.Image(e.Algorithms.If(col.size().gt(0), col.median(), empty)).select(list(VEG_COLUMNS))
     clear = comp.select("ndvi").mask().gt(0).unmask(0).rename("veg_clear_frac")
     return comp.addBands(clear)
@@ -290,7 +290,8 @@ def evapotranspiration(start, end):
         overlap = hi.subtract(lo).divide(86_400_000).max(0)
         vals = img.select(["ET", "PET"])
         vals = vals.updateMask(vals.lt(MOD16_FILL_MIN))
-        return vals.multiply(MOD16_SCALE).divide(length).multiply(overlap)
+        # cast: zero-overlap composites otherwise get a degenerate Float<0, 0> type
+        return vals.multiply(MOD16_SCALE).divide(length).multiply(overlap).toFloat()
 
     col = e.ImageCollection(MOD16).filterDate(s.advance(-MODIS_COMPOSITE, "day"), t).map(weight)
     return col.sum().rename(["et_mm", "pet_mm"])

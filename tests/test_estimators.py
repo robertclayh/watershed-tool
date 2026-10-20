@@ -137,6 +137,15 @@ def test_placebo_inverted_interval():
     assert lo < 1.0 < hi and np.isclose(1.0 - lo, hi - 1.0)
 
 
+def test_placebo_inverted_interval_exact_fit_placebos():
+    # alpha=0.1, J=19: the critical value is the 2nd-largest placebo statistic.
+    stats = np.linspace(0, 2, 19)
+    one = np.r_[stats[:-1], np.inf]
+    assert np.isfinite(placebo_inverted_interval(1.0, 0.5, one, 0.1)).all()
+    two = np.r_[stats[:-2], np.inf, np.inf]
+    assert placebo_inverted_interval(1.0, 0.5, two, 0.1) == (-np.inf, np.inf)
+
+
 def test_staggered_att():
     df, _ = factor_panel(effect=2.0, seed=9, n_units=30)
     ts = {"U00": 2012}
