@@ -137,7 +137,8 @@ def _cmd_extract(a) -> int:
         gee.static_covariates(fc).to_csv(out / "static.csv")
         if a.export:
             task = gee.export_panel(fc, spec, description=f"wiat_{name}")
-            print(f"{name}: started export task {task.id}; download the CSV into {out}/panel.csv")
+            print(f"{name}: started export task {task.id}. When it finishes, download the CSV and run\n"
+                  f"  python -c \"from wiat.data.gee import load_export; load_export('<csv>').to_csv('{out}/panel.csv', index=False)\"")
         else:
             panel = gee.quality_mask(gee.fetch_panel(fc, spec))
             from .panel import add_hydrologic_outcomes
