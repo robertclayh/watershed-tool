@@ -63,6 +63,22 @@ The same experiment on 454 real HydroBASINS units confirms the simulation:
   have a complete annual record.
 
 Write-up: [docs/latam_results.md](docs/latam_results.md).
+
+### Many treated basins: Socio Bosque (Ecuador)
+
+A staggered design on 162 basins enrolled in Ecuador's Socio Bosque programme
+(2008–2016), against matched never-enrolled basins:
+
+- **Avoided deforestation in the Amazon:** 0.04–0.06 percentage points less forest lost
+  per year (≈ 20–35% below matched controls), emerging about four years after
+  enrollment, in basins mostly under agreement. The evidence is moderate.
+- **No detectable change in NDVI, ET, ET/P or P − ET.** Amazon ET is bounded within about
+  ±6 mm/yr (0.4%). The forest saved is too little to move basin hydrology beyond what
+  the design can resolve.
+- **Unmatched comparisons are badly confounded:** a 163 mm/yr "effect" on rainfall.
+
+Write-up: [docs/socio_bosque_results.md](docs/socio_bosque_results.md).
+Data sources: [docs/intervention_data_sources.md](docs/intervention_data_sources.md).
 Methods: [docs/methodology.md](docs/methodology.md).
 
 ## Install

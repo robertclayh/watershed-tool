@@ -62,6 +62,14 @@ def prepare(a) -> int:
     print(f"study basins: {int(keep.sum())} (dropped {int((lon <= -84).sum())} Galapagos, "
           f"{int(((lon > -84) & (basins.SUB_AREA < a.min_area)).sum())} under {a.min_area:g} km2)")
     basins = basins[keep]
+    # Region strata for matching: Andes above 1,200 m; below it, Amazon east of 78.4 W, Coast west.
+    static = None if not (out / "static.csv").exists() else pd.read_csv(out / "static.csv", index_col=0)
+    if static is not None:
+        cen = basins.to_crs(32717).centroid.to_crs(4326)
+        elev = static.elevation_m.reindex(basins.HYBAS_ID).to_numpy()
+        region = np.where(elev >= 1200, "Andes", np.where(cen.x.to_numpy() > -78.4, "Amazon", "Coast"))
+        pd.DataFrame({"lon": cen.x.to_numpy(), "lat": cen.y.to_numpy(), "region": region},
+                     index=pd.Index(basins.HYBAS_ID, name="HYBAS_ID")).to_csv(out / "regions.csv")
     basins[["HYBAS_ID"]].rename(columns={"HYBAS_ID": "basin_id"}).to_csv(out / "study_basins.csv", index=False)
     share = share[share.index.isin(basins.HYBAS_ID)]
     treat = treatment_years(share, threshold=a.threshold, max_year=a.max_cohort)

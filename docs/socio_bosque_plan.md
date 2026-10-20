@@ -1,8 +1,8 @@
 # Study plan: Socio Bosque and catchment hydrology (Ecuador)
 
-Status: **in progress.** Data acquisition, basin exposure and the forest panel are
-built and run. The yearly optical/ET/precipitation panel is piloted, and the full
-extraction is running as Earth Engine batch tasks. The analysis has not been run yet.
+Status: **main analysis done**; results in [socio_bosque_results.md](socio_bosque_results.md).
+Not yet run: the spillover (one-basin buffer) check and the 10% / 50% threshold
+sensitivity.
 
 ## Question
 
@@ -135,13 +135,16 @@ itself worth stating against the single-basin results.
 2. ✅ Overlay with level-12 basins: exposure by year (`basin_exposure`).
 3. ✅ Annual extraction and Hansen forest-loss panel in `wiat.data.gee`.
 4. ✅ Pilot on a small subset of basins; Galápagos and fragments excluded as a result.
-5. ⏳ Full export to Drive (`examples/socio_bosque.py extract --export`): six tasks
-   started 2026-10-20. Then download to `data/socio_bosque/export/` and run
+5. ✅ Full extraction: Drive export tasks completed. The CSVs were fetched with Earth
+   Engine's direct table download (`getDownloadURL`, one year per request, ~25 s
+   each), which runs the same computation without a Drive round trip. Then
    `examples/socio_bosque.py assemble`.
-6. ⬜ Region strata, matching and balance tables.
-7. ⬜ Staggered ATT, event study and dose response for each outcome.
-8. ⬜ Injection validation on the panel.
-9. ⬜ Write-up: `docs/socio_bosque_results.md`.
+6. ✅ Region strata, matching and balance tables (k = 1 main; k = 2, 3, 5 sensitivity).
+7. ✅ Staggered ATT, event study and dose response for each outcome.
+8. ✅ Placebo validation: random enrollment among never-enrolled Amazon basins.
+9. ✅ Write-up: [socio_bosque_results.md](socio_bosque_results.md).
+10. ⬜ Spillover check (controls at least one basin away from any treated basin) and
+    10% / 50% thresholds.
 
 ## Known threats
 
