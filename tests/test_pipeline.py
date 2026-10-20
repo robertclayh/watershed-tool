@@ -31,6 +31,18 @@ def test_aggregate_sums_fluxes_and_means_indices(sim):
     assert y.evaporative_index == pytest.approx(mm.et_mm.sum() / mm.precip_mm.sum())
 
 
+def test_aggregate_tolerates_index_gaps_but_not_flux_gaps():
+    dates = pd.date_range("2001-01-01", periods=24, freq="MS")
+    ndvi = np.r_[[np.nan] * 8, np.full(4, 0.5), [np.nan] * 9, np.full(3, 0.7)]
+    precip = np.r_[np.full(12, 10.0), [np.nan], np.full(11, 10.0)]
+    df = pd.DataFrame({"basin_id": "a", "date": dates, "ndvi": ndvi, "precip_mm": precip})
+    a = aggregate(df, "year").set_index("date")
+    assert a.loc[2001, "ndvi"] == pytest.approx(0.5) and np.isnan(a.loc[2002, "ndvi"])  # 4 vs 3 clear months
+    assert a.loc[2001, "precip_mm"] == 120.0 and np.isnan(a.loc[2002, "precip_mm"])
+    strict = aggregate(df, "year", min_months_mean=None).set_index("date")
+    assert np.isnan(strict.loc[2001, "ndvi"])
+
+
 def test_water_year_aggregation_labels_by_end_year():
     dates = pd.date_range("2001-01-01", periods=36, freq="MS")
     df = pd.DataFrame({"basin_id": "a", "date": dates, "precip_mm": 1.0})
@@ -133,3 +145,19 @@ def test_cli_simulate_and_analyze(tmp_path):
     ]) == 0
     assert (tmp_path / "rep/report.md").exists()
     assert (tmp_path / "rep/scm_B000.png").exists()
+
+
+def test_injection_experiment_recovers_effect_and_holds_size(sim):
+    from wiat.validation import injection_experiment, prepare_region, summarize_injection
+
+    region = prepare_region(sim.counterfactual, "et_mm", {"B000": "2013-01-01"}, static=sim.static)
+    assert "B000" not in region["eligible"]
+    r = injection_experiment(region, donor_counts=(4, 12), effects=(0.10,), n_basins=12, n_jobs=1)
+    assert set(r.world) == {"effect", "no_effect"}
+    eff = r[(r.world == "effect") & (r.estimator == "did_placebo")]
+    assert (eff.truth > 0).all()
+    s = summarize_injection(r.assign(extremity=-1.0), 0.10)
+    did4 = s[(s.estimator == "did_placebo") & (s.n_donors == 4)].iloc[0]
+    assert did4.ci_bounded == 0 and did4.power == 0  # below 9 donors nothing is attributable
+    did12 = s[(s.estimator == "did_placebo") & (s.n_donors == 12)].iloc[0]
+    assert did12.ci_bounded == 1 and did12.coverage >= 0.75

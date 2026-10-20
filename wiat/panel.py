@@ -63,13 +63,18 @@ def aggregate(
     time: str = TIME,
     water_year_start_month: int = 1,
     min_months: int = 12,
+    min_months_mean: int | None = 4,
 ) -> pd.DataFrame:
     """Aggregate a monthly panel to annual (or water-year) periods.
 
     Fluxes (columns ending in ``_mm``) are summed; everything else is averaged, unless
     ``how`` overrides it. A period with fewer than ``min_months`` valid months gets NaN
-    rather than a biased partial sum. Derived ratios such as ``evaporative_index`` are
-    recomputed from the aggregated fluxes so they stay internally consistent.
+    rather than a biased partial sum. Averaged columns (vegetation indices) need only
+    ``min_months_mean`` valid months, because optical records have cloud gaps in most
+    wet seasons and a mean over the clear months is still an unbiased-in-expectation
+    level, whereas a sum over them is not. Pass ``None`` to apply ``min_months`` to
+    every column. Derived ratios such as ``evaporative_index`` are recomputed from the
+    aggregated fluxes so they stay internally consistent.
 
     ``water_year_start_month`` lets hydrologic years follow regional seasonality
     (e.g. 10 for an October-September water year). The result's integer ``time``
@@ -90,7 +95,9 @@ def aggregate(
     grouped = d.groupby([unit, "_period"])
     out = grouped[list(rules)].agg(rules)
     counts = grouped[list(rules)].count()
-    out = out.where(counts >= min_months)
+    need = pd.Series({c: min_months if r == "sum" or min_months_mean is None else min(min_months_mean, min_months)
+                      for c, r in rules.items()})
+    out = out.where(counts.ge(need, axis=1))
     out = out.reset_index().rename(columns={"_period": time})
     if "evaporative_index" in out and {"precip_mm", "et_mm"} <= set(out.columns):
         out["evaporative_index"] = out["et_mm"] / out["precip_mm"]

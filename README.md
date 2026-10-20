@@ -42,6 +42,23 @@ conventional methods hide the cliff.
   though its pre-period fit is the best in the experiment.
 
 Full write-up: [docs/where_attribution_fails.md](docs/where_attribution_fails.md).
+
+### On real basins (Extrema and Camboriú, Brazil)
+
+The same experiment on 293 real HydroBASINS units confirms the simulation:
+
+- **Camboriú: a bounded null.** The programme did not change basin ET by more than
+  about 10 mm/yr (≈ 0.9%) or NDVI by more than about 0.03.
+- **Extrema: not attributable.** The programme basin is more atypical than 96% of
+  its region (elevation +2.7 SD, forest +2.3 SD), so it has 6 suitable donors. A
+  typical basin in the same region has 92.
+- **Injecting known effects into every untreated basin:** cluster-robust DiD gives
+  38–83% false positives, and placebo methods hold 10%. Nothing is detectable below
+  9 donors. With 9 or more, a 5% ET change is found 87–100% of the time.
+- **Synthetic control with a 6-year baseline loses all power as donors are added**,
+  because placebos fit the short pre-period exactly.
+
+Write-up: [docs/latam_results.md](docs/latam_results.md).
 Methods: [docs/methodology.md](docs/methodology.md).
 
 ## Install
@@ -146,11 +163,12 @@ wiat/
   synth.py         synthetic control (standard / de-meaned / augmented), placebo & conformal inference
   attribution.py   AttributionStudy: pipeline, failure flags, verdict
   scarcity.py      Monte Carlo over donor count x atypicality; empirical donor thinning
+  validation.py    injected-effect validation on real panels
   simulate.py      synthetic watershed panels with known counterfactuals
   report.py        figures and markdown reports
   cli.py           `wiat simulate | extract | analyze | scarcity`
 docs/              methodology, failure analysis, figures, raw Monte Carlo results
-examples/          synthetic quick start, Latin American Earth Engine config
+examples/          synthetic quick start, Latin American Earth Engine config, latam_results.py
 tests/             pytest suite
 ```
 

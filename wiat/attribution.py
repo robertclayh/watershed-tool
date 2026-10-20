@@ -203,15 +203,18 @@ class AttributionStudy:
             feats = feats.join(self.static.select_dtypes("number"), how="left")
         return feats
 
+    def _match_covariates(self, feats: pd.DataFrame) -> list:
+        default = ["precip_mm_mean", "precip_mm_seasonality", "aridity", f"{self.outcome}_mean",
+                   "elevation_m", "slope_deg", "forest_frac"]
+        return [c for c in dict.fromkeys(self.match_on or default) if c in feats.columns]
+
     def run(self) -> AttributionReport:
         flags: list[Flag] = []
         treated = list(self.treat_start_raw)
 
         # 1. Matching: who can credibly stand in for the treated basin(s)?
         feats = self._features()
-        default = ["precip_mm_mean", "precip_mm_seasonality", "aridity", f"{self.outcome}_mean",
-                   "elevation_m", "slope_deg", "forest_frac"]
-        cov = [c for c in dict.fromkeys(self.match_on or default) if c in feats.columns]
+        cov = self._match_covariates(feats)
         sel = select_donors(feats, treated, covariates=cov, caliper=self.caliper,
                             hard_caliper=self.hard_caliper, exclude=self.exclude, max_donors=self.max_donors)
         donors = list(sel.suitable)

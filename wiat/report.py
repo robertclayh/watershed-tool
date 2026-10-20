@@ -103,29 +103,34 @@ def plot_donor_thinning(df: pd.DataFrame, truth: float | None = None, ax=None):
         fig, ax = plt.subplots(figsize=(7, 3.8))
     else:
         fig = ax.figure
-    labelled = set()
+    g = df.groupby("k")
+    series = []
     for col, color, off, name in (("did", BLUE, -0.12, "DiD (placebo CI)"), ("scm", ORANGE, 0.12, "SCM (placebo-inverted CI)")):
-        g = df.groupby("k")
-        est = g[f"{col}_estimate"].median()
-        lo = g[f"{col}_ci_low"].median()
-        hi = g[f"{col}_ci_high"].median()
+        series.append((g[f"{col}_estimate"].median(), g[f"{col}_ci_low"].median(), g[f"{col}_ci_high"].median(),
+                       color, off, name))
+    # One scale for both series, set by the typical finite bound so a single enormous
+    # (but finite) interval does not flatten the rest. Anything beyond is clipped.
+    vals = np.abs(np.concatenate([np.r_[e.values, lo.values, hi.values] for e, lo, hi, *_ in series]))
+    vals = vals[np.isfinite(vals)]
+    span = 1.3 * float(np.percentile(vals, 75)) if len(vals) else 1.0
+    edge = span * 1.6
+    for est, lo, hi, color, off, name in series:
         k = np.arange(len(est))
-        span = np.nanmax(np.abs(np.r_[est.values, lo[np.isfinite(lo)].values, hi[np.isfinite(hi)].values]))
-        lo_p = np.where(np.isfinite(lo), lo, -span * 1.6)
-        hi_p = np.where(np.isfinite(hi), hi, span * 1.6)
-        ax.vlines(k + off, lo_p, hi_p, color=color, lw=2)
+        bounded = np.isfinite(lo) & np.isfinite(hi)
+        ax.vlines((k + off)[bounded], np.clip(lo[bounded], -edge, edge), np.clip(hi[bounded], -edge, edge),
+                  color=color, lw=2)
+        ax.vlines((k + off)[~bounded], -edge, edge, color=color, lw=1.2, ls=(0, (2, 2)))
+        for kk in k[~bounded]:
+            ax.annotate("∞", (kk + off, edge), ha="center", va="bottom", fontsize=8, color=color)
         ax.plot(k + off, est, "o", color=color, ms=6, label=name)
-        for kk, low, high in zip(k, lo, hi):
-            if not (np.isfinite(low) and np.isfinite(high)) and kk not in labelled:
-                labelled.add(kk)
-                ax.annotate("unbounded", (kk, span * 1.6), ha="center", va="bottom", fontsize=7, color=MUTED)
+    ax.set_ylim(-edge * 1.12, edge * 1.12)
     ax.set_xticks(np.arange(len(est)), [str(v) for v in est.index])
     ax.set_xlabel("donor basins available (k nearest matches)")
     ax.axhline(0, color=MUTED, lw=0.8)
     if truth is not None:
         ax.axhline(truth, color=AQUA, lw=1.5, ls="--", label="true effect")
     ax.legend(loc="lower right")
-    ax.set_title("Same study, shrinking donor pool")
+    ax.set_title("Same study, shrinking donor pool (dashed = unbounded)")
     fig.tight_layout()
     return fig
 
@@ -141,7 +146,7 @@ SCARCITY_PANELS = (
 
 
 def plot_scarcity(summary: pd.DataFrame, estimator: str = "scm", alpha: float = 0.1,
-                  panels=SCARCITY_PANELS, title: str | None = None):
+                  panels=SCARCITY_PANELS, title: str | None = None, labels: dict | None = None):
     """Degradation curves: one panel per metric, one line per treated-basin extremity."""
     plt = _plt()
     s = summary[summary.estimator == estimator]
@@ -149,7 +154,7 @@ def plot_scarcity(summary: pd.DataFrame, estimator: str = "scm", alpha: float = 
     ncol = 3
     nrow = int(np.ceil(len(panels) / ncol))
     fig, axes = plt.subplots(nrow, ncol, figsize=(10.5, 3.1 * nrow))
-    labels = {0.0: "typical basin", 1.0: "atypical (1 SD)", 2.0: "extreme (2 SD)"}
+    labels = labels or {0.0: "typical basin", 1.0: "atypical (1 SD)", 2.0: "extreme (2 SD)"}
     for ax, (metric, label, ylim) in zip(axes.ravel(), panels):
         for e, color in zip(exts, SERIES):
             d = s[s.extremity == e].sort_values("n_donors")
