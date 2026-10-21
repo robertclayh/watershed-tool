@@ -71,6 +71,12 @@ def prepare(a) -> int:
         pd.DataFrame({"lon": cen.x.to_numpy(), "lat": cen.y.to_numpy(), "region": region},
                      index=pd.Index(basins.HYBAS_ID, name="HYBAS_ID")).to_csv(out / "regions.csv")
     basins[["HYBAS_ID"]].rename(columns={"HYBAS_ID": "basin_id"}).to_csv(out / "study_basins.csv", index=False)
+    if not (out / "adjacency.csv").exists():
+        g = basins.to_crs(32717)[["HYBAS_ID", "geometry"]]
+        j = gpd.sjoin(g.assign(geometry=g.buffer(100)), g, predicate="intersects")
+        j = j[j.HYBAS_ID_left != j.HYBAS_ID_right]
+        j.rename(columns={"HYBAS_ID_left": "basin_id", "HYBAS_ID_right": "neighbour"})[
+            ["basin_id", "neighbour"]].to_csv(out / "adjacency.csv", index=False)
     share = share[share.index.isin(basins.HYBAS_ID)]
     treat = treatment_years(share, threshold=a.threshold, max_year=a.max_cohort)
     pd.DataFrame({"basin_id": list(treat), "start": list(treat.values())}).to_csv(out / "treatments.csv", index=False)

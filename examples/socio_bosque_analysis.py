@@ -43,6 +43,8 @@ def load(d: Path):
     p["year"] = p.date.dt.year
     p["forest_loss_pct"] = 100 * p.forest_loss_frac
     p["forest_cover_pct"] = 100 * p.forest_cover_frac
+    # Roughly log-scaled loss: proportional growth in clearing counts as no effect.
+    p["asinh_loss"] = np.arcsinh(10 * p.forest_loss_pct)
     static = pd.read_csv(d / "static.csv", index_col=0)
     regions = pd.read_csv(d / "regions.csv", index_col=0)
     treat = pd.read_csv(d / "treatments.csv")
@@ -135,6 +137,72 @@ def placebo_validation(p: pd.DataFrame, cohorts: list, pool: list, outcomes, rep
                                     sd_estimate=("att", "std"), reps=("rep", "nunique")).reset_index()
 
 
+def robustness(p, feats, region, treat, controls, expo, adjacency, alpha, n_boot) -> pd.DataFrame:
+    """Spillover and enrollment-threshold checks (each re-matched at k = 1).
+
+    * ``buffer``: controls not adjacent to any treated basin, so deforestation
+      displaced from enrolled land into a neighbour cannot sit in the comparison group.
+    * ``strict buffer``: controls not adjacent to any basin with >1% enrolled.
+    * ``leakage``: never-enrolled basins *adjacent* to a treated basin, given their
+      neighbour's start year, against strict-buffer controls. Displaced clearing
+      would show up as a positive effect on their forest loss.
+    * ``threshold 10%`` / ``threshold 50%``: treatment defined at other shares.
+    """
+    from wiat.data.interventions import treatment_years
+
+    near = adjacency.groupby("basin_id").neighbour.apply(set)
+    treated = list(treat)
+    enrolled = set(expo.index[expo.max(axis=1) > 0.01])
+    near_t = set().union(*(near.get(t, set()) for t in treated))
+    near_e = set().union(*(near.get(e, set()) for e in enrolled))
+    pools = {"buffer": [c for c in controls if c not in near_t],
+             "strict buffer": [c for c in controls if c not in near_e]}
+    designs = {name: (treat, pool) for name, pool in pools.items()}
+    leak = {c: min(treat[t] for t in near.get(c, set()) if t in treat) for c in controls if c in near_t}
+    designs["leakage"] = (leak, pools["strict buffer"])
+    study = set(feats.index)
+    for th in (0.1, 0.5):
+        tr = {u: y for u, y in treatment_years(expo, th, max_year=max(treat.values())).items() if u in study}
+        designs[f"threshold {th:.0%}"] = (tr, controls)
+
+    rows = []
+    for name, (tr, pool) in designs.items():
+        tr = {u: y for u, y in tr.items() if u in study and feats.loc[u, MATCH_ON].notna().all()}
+        m, pairs = match(feats, region, list(tr), pool, k=1)
+        tr = {t: tr[t] for t in pairs.treated}
+        smd = balance(feats, list(tr), m).smd.abs().max()
+        amazon = [t for t in tr if region[t] == "Amazon"]
+        for scope, (T, C) in {"all regions": (tr, m),
+                              "Amazon": ({t: tr[t] for t in amazon}, [c for c in m if region[c] == "Amazon"])}.items():
+            for outcome in OUTCOMES:
+                _, row = estimate(p, outcome, T, C, alpha, n_boot)
+                rows.append({"design": name, "scope": scope, "max_abs_smd": smd, **row})
+        print(f"done: {name} ({len(tr)} treated, {len(m)} matched controls, max|SMD| {smd:.2f})")
+    return pd.DataFrame(rows)
+
+
+def scale_check(p, feats, region, treat, controls, expo, adjacency, alpha, n_boot) -> pd.DataFrame:
+    """Amazon forest loss in pp and on the asinh scale, across matching designs."""
+    from wiat.data.interventions import treatment_years
+
+    near = adjacency.groupby("basin_id").neighbour.apply(set)
+    enrolled = set(expo.index[expo.max(axis=1) > 0.01])
+    near_e = set().union(*(near.get(e, set()) for e in enrolled))
+    study = set(feats.index)
+    designs = {f"k={k}": (treat, controls, k) for k in (1, 3, 5)}
+    designs["strict buffer"] = (treat, [c for c in controls if c not in near_e], 1)
+    designs["threshold 10%"] = ({u: y for u, y in treatment_years(expo, 0.1, max_year=max(treat.values())).items()
+                                 if u in study}, controls, 1)
+    rows = []
+    for name, (tr, pool, k) in designs.items():
+        am = [t for t in tr if region[t] == "Amazon" and feats.loc[t, MATCH_ON].notna().all()]
+        m, _ = match(feats, region, am, [c for c in pool if region.get(c) == "Amazon"], k=k)
+        for outcome in ("forest_loss_pct", "asinh_loss"):
+            _, row = estimate(p, outcome, {t: tr[t] for t in am}, m, alpha, n_boot)
+            rows.append({"design": name, **row})
+    return pd.DataFrame(rows)
+
+
 def plot_event(results: dict, path: Path, window=(-6, 10), title: str = ""):
     plt = _plt()
     keys = list(results)
@@ -192,6 +260,7 @@ def main(argv=None) -> int:
     ap.add_argument("--n-boot", type=int, default=499)
     ap.add_argument("--k", type=int, default=1, help="matched controls per treated basin (main spec)")
     ap.add_argument("--placebo-reps", type=int, default=200)
+    ap.add_argument("--checks", action="store_true", help="run only the spillover / threshold checks")
     a = ap.parse_args(argv)
     d, out, figdir = Path(a.data), Path(a.out), Path(a.fig_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -205,6 +274,17 @@ def main(argv=None) -> int:
     treated = sorted(set(pairs.treated))
     treat = {t: treat[t] for t in treated}
     all_ctrl = [c for c in controls if c in feats.index]
+    if a.checks:
+        adjacency = pd.read_csv(d / "adjacency.csv")
+        full_treat = {t: s for t, s in load(d)[3].items() if t in feats.index}
+        rob = robustness(p, feats, region, full_treat, all_ctrl, expo, adjacency, a.alpha, a.n_boot)
+        rob.to_csv(out / "socio_bosque_robustness.csv", index=False)
+        sc = scale_check(p, feats, region, full_treat, all_ctrl, expo, adjacency, a.alpha, a.n_boot)
+        sc.to_csv(out / "socio_bosque_scale_check.csv", index=False)
+        print(sc[["design", "outcome", "att", "ci_low", "ci_high"]].round(4).to_string(index=False))
+        cols = ["design", "scope", "outcome", "att", "ci_low", "ci_high", "n_treated", "n_controls", "max_abs_smd"]
+        print(rob[cols].round(4).to_string(index=False))
+        return 0
 
     bal = pd.concat({"unmatched": balance(feats, treated, all_ctrl), "matched": balance(feats, treated, matched)},
                     axis=1)

@@ -1,8 +1,7 @@
 # Study plan: Socio Bosque and catchment hydrology (Ecuador)
 
-Status: **main analysis done**; results in [socio_bosque_results.md](socio_bosque_results.md).
-Not yet run: the spillover (one-basin buffer) check and the 10% / 50% threshold
-sensitivity.
+Status: **done**; results in [socio_bosque_results.md](socio_bosque_results.md),
+including the spillover and threshold checks.
 
 ## Question
 
@@ -143,8 +142,11 @@ itself worth stating against the single-basin results.
 7. ✅ Staggered ATT, event study and dose response for each outcome.
 8. ✅ Placebo validation: random enrollment among never-enrolled Amazon basins.
 9. ✅ Write-up: [socio_bosque_results.md](socio_bosque_results.md).
-10. ⬜ Spillover check (controls at least one basin away from any treated basin) and
-    10% / 50% thresholds.
+10. ✅ Spillover checks (buffer, strict buffer, leakage) and 10% / 50% thresholds
+    (`socio_bosque_analysis.py --checks`). They overturned the first-stage finding: see
+    results §2 and §6.
+11. ⬜ Parcel-level first stage: agreement polygons against matched non-enrolled
+    forest pixels.
 
 ## Known threats
 

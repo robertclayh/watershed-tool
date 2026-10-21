@@ -10,33 +10,43 @@ with a basin bootstrap stratified by cohort (499 draws), reported as 90% interva
 Annual panels run 2001–2024.
 
 Reproduce with `examples/socio_bosque.py` (prepare / extract / assemble) and
-`examples/socio_bosque_analysis.py`. Results are in `results/socio_bosque_*`.
+`examples/socio_bosque_analysis.py` (add `--checks` for §6). Results are in
+`results/socio_bosque_*`.
 
 ## Summary
 
-1. **Matching is essential.** Treated basins are remote, flat, almost fully forested
-   Amazonian land under collective title. Before enrollment they lost forest about
-   6½× more slowly than never-enrolled basins. Unmatched comparisons say Socio Bosque
-   *increased* deforestation and cut rainfall by 163 mm/yr. Both are artefacts of
-   selection.
-2. **First stage: modest avoided deforestation in the Amazon.** Against matched controls,
-   enrolled Amazonian basins lost **0.04–0.06 percentage points less of their forest per
-   year**, roughly 20–35% below the controls' 0.18%/yr. The effect emerges about four
-   years after enrollment, and appears where ≥ 50% of the basin is enrolled but not at
-   20–50%. It is negative in every matching specification, but its 90% interval only
-   just reaches zero in the best-balanced one.
-3. **No detectable hydrological effect, and none should be expected.** NDVI, ET, ET/P and
-   P − ET show no change in the Amazon. ET is bounded within a few mm/yr (about ±0.4%).
-   The forest saved, about 0.5–1% of each basin over a decade, is too little to move
-   basin ET by more than an estimated 1–4 mm/yr, below what the design can resolve.
-4. **Pooled across regions, a rainfall placebo fails.** Basin-level hydrology estimates
-   outside the Amazon (27 treated basins) are confounded by climate.
+1. **Matching is essential, and even matching is not enough.** Treated basins are
+   remote, flat, almost fully forested Amazonian land under collective title. Before
+   enrollment they lost forest about 6½× more slowly than never-enrolled basins.
+   Unmatched comparisons say Socio Bosque *increased* deforestation and cut rainfall by
+   163 mm/yr, both artefacts of selection. After matching, Amazon controls still lose
+   about twice as much forest at baseline as the treated basins.
+2. **No robust evidence of avoided deforestation.** The main matched estimate for the
+   Amazon is −0.038 percentage points of forest per year (90% CI −0.086 to +0.002). It
+   is significant only in specifications with looser balance, and it shrinks toward
+   zero as controls are matched more closely on baseline deforestation:
+   - controls at least one basin away from any enrolled land: −0.018
+   - 10% threshold: −0.015
+   - 50% threshold: −0.001, a tight null
+   - log-type scale, best-balanced match: −0.037 [−0.105, +0.027]
+
+   That pattern is what residual selection on deforestation pressure produces.
+3. **No detectable hydrological effect.** NDVI, ET, ET/P and P − ET show no change in
+   the Amazon in any design. ET is bounded within a few mm/yr (about ±0.4%). Even the
+   largest forest-loss estimate would save too little forest to move basin ET beyond
+   what the design can resolve.
+4. **Pooled across regions, a rainfall placebo fails in every design**, so basin
+   hydrology estimates outside the Amazon (27 treated basins) are confounded by climate.
+5. **No detectable leakage** of deforestation into neighbouring basins, but the test
+   is imprecise.
 
 This is the toolkit's central finding in a design that should favour attribution:
-135 treated Amazonian basins, hundreds of candidate controls, and a 7–15-year baseline.
-Attribution works for the vegetation channel (forest loss) and fails for the
-hydrological one, because the hydrological signal of a conservation programme is
-smaller than the noise floor of basin-scale remote sensing.
+135 treated Amazonian basins, hundreds of candidate controls, and a 7–15-year baseline,
+with hundreds of treated units making the inference close to nominal. Precision is no
+longer the problem. Selection is: the programme enrolled forest that was under little
+threat, and no observable comparison basin fully reproduces that. Where the comparison
+is cleanest (nearly fully enrolled basins against controls with the same near-zero
+baseline loss), there is no effect to attribute, on forest or on water.
 
 ## 1. Selection and balance
 
@@ -55,7 +65,7 @@ smaller than the noise floor of basin-scale remote sensing.
 
 With one control per treated basin, every covariate is within the usual 0.25 threshold.
 Using more controls per basin (k = 2, 3, 5) narrows intervals but loosens balance
-(maximum |SMD| 0.30, 0.38, 0.43). Those results are reported as sensitivity checks.
+(maximum |SMD| 0.30, 0.38, 0.43).
 
 The unmatched comparison shows what selection does:
 
@@ -68,42 +78,62 @@ The unmatched comparison shows what selection does:
 A forest-protection programme cannot cut rainfall by 163 mm/yr. The unmatched controls
 are drier, more deforested basins on different trajectories.
 
-## 2. Forest loss: the first stage
+An SMD of −0.23 hides a large *proportional* gap. In the Amazon, the treated basins'
+2001–07 loss averaged 0.031 %/yr and their matched controls' 0.065 %/yr, about twice as
+much. §2 shows why that matters.
+
+## 2. Forest loss: an apparent effect that does not survive tighter matching
 
 ![Event study, Amazon](figures/socio_bosque_event_study.png)
 
-| Forest loss (pp of 2000 forest / yr) | k = 1 | k = 2 | k = 3 | k = 5 |
-|---|---|---|---|---|
-| Amazon (135 treated) | −0.038 [−0.086, +0.002] | −0.053 [−0.095, −0.011] | −0.056 [−0.096, −0.020] | −0.061 [−0.093, −0.030] |
-| All regions (162) | −0.029 [−0.069, +0.012] | −0.029 [−0.065, +0.007] | −0.024 [−0.058, +0.013] | −0.026 [−0.058, +0.003] |
-| Max \|SMD\| | 0.23 | 0.30 | 0.38 | 0.43 |
+The Amazon event study (k = 1) looks like avoided deforestation. Loss rates are
+indistinguishable before enrollment (leads within ±0.02 pp, one of five excluding
+zero). They stay near zero for three years, then run 0.05–0.10 pp/yr lower in most
+years from year 4 on. Across matching specifications:
 
-By dose (all regions, k = 1): **≥ 50% enrolled: −0.047 [−0.086, −0.011]** (86 basins,
-82 of them Amazonian); 20–50% enrolled: −0.008 [−0.059, +0.048] (76 basins).
+| Amazon forest loss (pp of 2000 forest / yr) | Estimate [90% CI] | Max \|SMD\| | Baseline loss, treated vs controls (%/yr) |
+|---|---|---|---|
+| k = 5 | −0.061 [−0.093, −0.030] | 0.43 | 0.031 vs 0.082 |
+| k = 3 | −0.056 [−0.096, −0.020] | 0.38 | 0.031 vs 0.082 |
+| k = 2 | −0.053 [−0.095, −0.011] | 0.30 | 0.031 vs 0.072 |
+| **k = 1 (main)** | **−0.038 [−0.086, +0.002]** | 0.23 | 0.031 vs 0.065 |
+| Strict buffer (§6) | −0.018 [−0.065, +0.024] | 0.32 | 0.031 vs 0.047 |
+| 10% threshold (§6) | −0.015 [−0.055, +0.024] | 0.16 | 0.034 vs 0.063 |
+| 50% threshold (§6) | −0.001 [−0.010, +0.009] | 0.15 | 0.005 vs 0.006 |
 
-The Amazon event study shows the timing. Loss rates are indistinguishable before
-enrollment (leads within ±0.02 pp, one of five excluding zero). They stay near zero
-for the first three years, then run 0.05–0.10 pp/yr lower in most years from year 4
-on (−0.02 in year 8). That pattern
-fits protection of forest that clearing pressure reaches only later.
+**The estimate tracks the baseline gap.** The more the controls out-deforest the treated
+basins before enrollment, the larger the apparent effect. Where baseline loss is equal
+(the 50% design), the effect is zero with a tight interval.
 
-Two cautions:
+**The likely mechanism is proportional growth.** After 2010, Amazonian deforestation
+roughly tripled in both groups: treated basins went from 0.031 to 0.094 %/yr, and
+matched controls from 0.065 to 0.182 %/yr. If clearing grows in proportion to its
+existing level, a difference-in-differences in absolute percentage points reads that
+common growth as a programme effect. On a log-type scale (asinh of loss), where
+proportional growth counts as no effect, the estimate is not significant in any
+well-balanced design:
 
-- **Cumulative forest cover has a pre-trend.** Even matched, controls lost slightly more
-  forest before enrollment (SMD −0.23 on the baseline rate). That small difference
-  accumulates in the *cover* series: its leads drift from −0.28 to −0.05 pp over the
-  five pre-years, about 0.06 pp/yr, against about 0.10 pp/yr after enrollment. Perhaps
-  half of the post-enrollment cover gap continues a pre-existing difference. The *loss
-  rate* outcome differences out level differences and is the cleaner first-stage
-  measure.
-- **The intervals run slightly narrow.** In the placebo validation (§4) they reject
-  12–17% of the time where 10% is nominal. A result whose interval just excludes zero
-  should be read as suggestive.
+| Amazon, asinh(10 × loss %) | Estimate [90% CI] |
+|---|---|
+| k = 1 | −0.037 [−0.105, +0.027] |
+| k = 3 | −0.057 [−0.113, −0.003] |
+| k = 5 | −0.073 [−0.119, −0.021] |
+| Strict buffer | +0.014 [−0.044, +0.077] |
+| 10% threshold | −0.006 [−0.068, +0.054] |
 
-Taken together: the evidence points to avoided deforestation of about 0.04–0.06 pp/yr
-in enrolled Amazonian basins, concentrated in basins mostly under agreement and
-emerging with a lag. The evidence is moderate, not conclusive. Survivorship (only
-active agreements are published) would bias toward finding this effect.
+**The earlier dose result was an artefact.** In the main run, basins ≥ 50% enrolled
+showed −0.047 [−0.086, −0.011] against the controls matched to *all* treated basins.
+Those nearly fully enrolled basins lose almost no forest (0.006 %/yr at baseline),
+far less than that shared control set. Matched to their own controls (the 50% threshold
+design), the effect disappears.
+
+Cumulative forest cover adds nothing independent: it integrates the same rate
+difference, and its leads drift by about 0.06 pp/yr before enrollment.
+
+**Conclusion on the first stage:** the data cannot distinguish a small avoided-loss
+effect from residual selection on deforestation pressure. Survivorship (only active
+agreements are published) would bias *toward* finding an effect, and the best-matched
+comparisons still find none.
 
 ## 3. Hydrology: bounded nulls in the Amazon
 
@@ -115,18 +145,19 @@ active agreements are published) would bias toward finding this effect.
 | P − ET (mm/yr) | −20 [−82, +39] | 1,827 | ±45 |
 | Precipitation, placebo (mm/yr) | −18 [−80, +42] ✓ | 3,306 | ±45 |
 
-Nothing moves. The precipitation placebo passes, so the comparison is not visibly
-confounded by climate in the Amazon. ET is tightly bounded: the interval excludes
-changes larger than about 6 mm/yr (0.4%). The ET event study has pre-period leads of
-−2 to −7 mm, so the comparison is not clean at the ±5 mm level, but no specification
-shows a hydrologically meaningful change.
+Nothing moves, in this or any robustness design (§6: Amazon ET between +0.7 and +2.8
+mm/yr, every interval including zero). The precipitation placebo passes in the Amazon,
+borderline under the strict buffer (−59 [−115, +1]). ET is tightly bounded: the main
+interval excludes changes larger than about 6 mm/yr (0.4%). The ET event study has
+pre-period leads of −2 to −7 mm, so the comparison is not clean at the ±5 mm level, but
+no specification shows a hydrologically meaningful change.
 
-**Why no hydrological effect is expected.** The forest saved is about 0.5–1% of a
-138 km² basin over 10–15 years, roughly 0.7–1.4 km². If tropical forest converted to
-pasture loses 20–30% of its ET (an illustrative figure, not one measured here), that
-moves basin ET by about 0.1–0.3%, or 1–4 mm/yr. That is at or below the design's
-±3.5 mm resolution. P − ET is noisier still: its ±45 mm resolution is set by rainfall
-variability, roughly 20 times the plausible signal.
+**Even the largest forest effect would be invisible in hydrology.** Take the largest
+estimate (k = 5): its cumulative cover gap reaches about 1% of a 138 km² basin after a
+decade. If tropical forest converted to pasture loses 20–30% of its ET (an illustrative
+figure, not one measured here), that moves basin ET by 0.2–0.3%, or about 3–4 mm/yr.
+That is at the design's ±3.5 mm resolution. P − ET is noisier still: its ±45 mm
+resolution is set by rainfall variability.
 
 ## 4. Validation: what this design can see
 
@@ -144,30 +175,67 @@ treated, so every rejection is a false positive.
 | P − ET (mm/yr) | 13% | 45 | 28 |
 | Precipitation (mm/yr) | 13% | 45 | 28 |
 
-Compared with the single-basin studies ([latam_results.md](latam_results.md)), many
-treated basins buy a great deal of precision: the ET resolution is ±3.5 mm/yr here, against
-±12–30 mm/yr for one basin with a full donor pool. Inference is close to nominal,
-where naive single-basin DiD reached 34–83% false positives. But precision is not the
-binding constraint. The binding constraint is effect size: a conservation programme
-changes so little land that its hydrological signal stays below even this resolution.
+Random assignment among never-enrolled basins removes selection, so this measures noise
+only. The intervals run slightly narrow (12–17% false positives at a nominal 10%), and
+the resolution is fine: ±3.5 mm/yr for ET, against ±12–30 mm/yr for one basin with a
+full donor pool ([latam_results.md](latam_results.md)). What validation by random
+assignment cannot measure is the selection bias in §2. Real enrollment was not random,
+and that, not noise, limits this study.
 
 ## 5. Outside the Amazon
 
 Pooled across regions (162 treated), the precipitation placebo gives −46 mm/yr
-[−99, +5] at k = 1 and excludes zero at k = 2, 3 and 5. Treated Andean and Coastal basins
-(27) follow different rainfall trajectories from their matches, so pooled ET (+8.5
-[+3.6, +13.5] mm/yr) and P − ET estimates reflect climate, not the programme. With 14
-treated Andean and 13 Coastal basins, separate regional estimates would be too noisy
-to be useful.
+[−99, +5] at k = 1 and excludes zero at k = 2, 3 and 5 and in every §6 design except the
+50% threshold. Treated Andean and Coastal basins (27) follow different rainfall
+trajectories from their matches, so pooled ET (+8.5 [+3.6, +13.5] mm/yr) and P − ET
+estimates reflect climate, not the programme. With 14 treated Andean and 13 Coastal
+basins, separate regional estimates would be too noisy to be useful.
+
+## 6. Robustness: spillovers and enrollment thresholds
+
+Each design is re-matched at k = 1 (`socio_bosque_analysis.py --checks`;
+`results/socio_bosque_robustness.csv`). HydroBASINS units are adjacent if their
+boundaries are within 100 m (median 6 neighbours).
+
+| Design | Treated (Amazon) | Matched controls (Amazon) | Max \|SMD\| |
+|---|---|---|---|
+| **Buffer:** controls not adjacent to any treated basin | 162 (135) | 78 (56) | 0.34 |
+| **Strict buffer:** controls not adjacent to any basin > 1% enrolled | 162 (135) | 71 (52) | 0.32 |
+| **Leakage:** never-enrolled neighbours of treated basins as "treated" | 130 (98) | 75 (55) | 0.12 |
+| **10% threshold** | 231 (164) | 137 (89) | 0.16 |
+| **50% threshold** | 78 (74) | 45 (41) | 0.15 |
+
+| Amazon ATT [90% CI] | Forest loss (pp/yr) | NDVI | ET (mm/yr) | Precipitation, placebo (mm/yr) |
+|---|---|---|---|---|
+| Main (k = 1) | −0.038 [−0.086, +0.002] | −0.0015 [−0.0047, +0.0019] | +1.8 [−2.1, +5.7] | −18 [−80, +42] |
+| Buffer | −0.036 [−0.080, +0.003] | −0.0025 [−0.0053, +0.0008] | +2.7 [−0.9, +7.0] | −36 [−98, +19] |
+| Strict buffer | −0.018 [−0.065, +0.024] | −0.0035 [−0.0064, −0.0001] | +1.3 [−2.6, +5.6] | −59 [−115, +1] |
+| Leakage | +0.025 [−0.064, +0.110] | −0.0054 [−0.0099, −0.0007] | +0.8 [−3.6, +4.9] | −15 [−93, +50] |
+| 10% threshold | −0.015 [−0.055, +0.024] | −0.0019 [−0.0047, +0.0008] | +2.8 [−0.4, +6.2] | −34 [−91, +23] |
+| 50% threshold | −0.001 [−0.010, +0.009] | −0.0027 [−0.0064, +0.0005] | +0.7 [−3.5, +5.5] | −32 [−110, +46] |
+
+- **Spillovers do not explain the result.** Excluding controls next to treated basins
+  barely changes the estimate (−0.036). Excluding controls next to *any* enrolled
+  land halves it (−0.018), mostly because those distant controls have lower
+  baseline loss (0.047 vs 0.065 %/yr), not because of displaced clearing.
+- **No detectable leakage.** Never-enrolled neighbours of treated basins show
+  +0.025 pp/yr more forest loss than distant controls, the sign leakage would produce,
+  but the interval (−0.064 to +0.110) is too wide to conclude anything.
+- **Thresholds:** at 10% the effect is −0.015, and at 50% it is zero (§2).
+- **NDVI** is slightly negative in the buffered and leakage designs (−0.003 to −0.005,
+  about 0.5% of baseline). That is small, inconsistent in sign with avoided
+  deforestation, and one of many outcomes tested, so it is not a finding.
 
 ## Caveats
 
 - **Survivorship:** only currently active agreements are published. Basins whose
-  agreements ended, possibly after clearing, are missing from the treated group.
+  agreements ended, possibly after clearing, are missing from the treated group. That
+  biases toward finding avoided loss, which the best-matched designs still do not find.
 - **Treatment timing** uses signing dates. Payments and on-the-ground enforcement may lag.
-- **Spillovers:** deforestation displaced from enrolled land to neighbouring basins would
-  inflate the avoided-loss estimate if those neighbours are controls. The
-  one-basin-buffer check in the plan is not yet run.
+- **Basin scale:** effects inside agreement boundaries could exist and still be diluted
+  below detection at 138 km² basin scale, especially at the 20% threshold. A parcel-level
+  analysis (agreement polygons against matched non-enrolled forest pixels) is the
+  natural next test of the first stage.
 - **Hansen loss** counts only loss of 2000 forest; regrowth is not tracked.
 - **MODIS ET** is model output partly driven by vegetation indices, and coarse (500 m).
 - **EVI** was dropped: annual composites give unstable values where its denominator

@@ -69,13 +69,16 @@ Write-up: [docs/latam_results.md](docs/latam_results.md).
 A staggered design on 162 basins enrolled in Ecuador's Socio Bosque programme
 (2008–2016), against matched never-enrolled basins:
 
-- **Avoided deforestation in the Amazon:** 0.04–0.06 percentage points less forest lost
-  per year (≈ 20–35% below matched controls), emerging about four years after
-  enrollment, in basins mostly under agreement. The evidence is moderate.
-- **No detectable change in NDVI, ET, ET/P or P − ET.** Amazon ET is bounded within about
-  ±6 mm/yr (0.4%). The forest saved is too little to move basin hydrology beyond what
-  the design can resolve.
+- **No robust evidence of avoided deforestation.** An apparent 0.04–0.06 pp/yr reduction
+  in Amazon forest loss shrinks to zero as controls are matched more closely on
+  baseline deforestation. It also disappears for nearly fully enrolled basins, and on
+  a log scale. The pattern points to residual selection: the programme enrolled forest
+  under little threat.
+- **No detectable change in NDVI, ET, ET/P or P − ET** in any design. Amazon ET is
+  bounded within about ±6 mm/yr (0.4%).
 - **Unmatched comparisons are badly confounded:** a 163 mm/yr "effect" on rainfall.
+- With hundreds of treated basins, precision is no longer the limit (ET resolution
+  ±3.5 mm/yr). Non-random enrollment is.
 
 Write-up: [docs/socio_bosque_results.md](docs/socio_bosque_results.md).
 Data sources: [docs/intervention_data_sources.md](docs/intervention_data_sources.md).
