@@ -77,6 +77,10 @@ A staggered design on 162 basins enrolled in Ecuador's Socio Bosque programme
 - **No detectable change in NDVI, ET, ET/P or P − ET** in any design. Amazon ET is
   bounded within about ±6 mm/yr (0.4%).
 - **Unmatched comparisons are badly confounded:** a 163 mm/yr "effect" on rainfall.
+- **At the pixel level, matching balances every covariate to within 0.02 SD, yet
+  treated forest was already being cleared far more slowly before enrollment.** Net
+  of that, avoided loss is −0.017 pp/yr [−0.043, +0.004]: at most ~0.6% of enrolled
+  forest over 15 years.
 - With hundreds of treated basins, precision is no longer the limit (ET resolution
   ±3.5 mm/yr). Non-random enrollment is.
 

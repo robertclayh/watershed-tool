@@ -10,7 +10,8 @@ with a basin bootstrap stratified by cohort (499 draws), reported as 90% interva
 Annual panels run 2001–2024.
 
 Reproduce with `examples/socio_bosque.py` (prepare / extract / assemble) and
-`examples/socio_bosque_analysis.py` (add `--checks` for §6). Results are in
+`examples/socio_bosque_analysis.py` (add `--checks` for §6), and
+`examples/socio_bosque_parcels.py` for §7. Results are in
 `results/socio_bosque_*`.
 
 ## Summary
@@ -39,6 +40,14 @@ Reproduce with `examples/socio_bosque.py` (prepare / extract / assemble) and
    hydrology estimates outside the Amazon (27 treated basins) are confounded by climate.
 5. **No detectable leakage** of deforestation into neighbouring basins, but the test
    is imprecise.
+6. **At the pixel level, inside agreements (§7), the same story holds with sharper
+   evidence.** Matching on travel time, forest-edge distance, terrain and local
+   deforestation pressure balances every covariate to within 0.02 SD. Yet treated
+   pixels were already losing forest more slowly than their matches *before*
+   enrollment: 86% more slowly for individual agreements. Net of that pre-existing
+   gap, avoided loss is −0.017 pp/yr [−0.043, +0.004] on enrolled forest, not
+   significant on either the difference or the ratio scale. The binding constraint is
+   that forest loss is rare: 22 losses in treated pixels against 65 in controls.
 
 This is the toolkit's central finding in a design that should favour attribution:
 135 treated Amazonian basins, hundreds of candidate controls, and a 7–15-year baseline,
@@ -226,16 +235,86 @@ boundaries are within 100 m (median 6 neighbours).
   about 0.5% of baseline). That is small, inconsistent in sign with avoided
   deforestation, and one of many outcomes tested, so it is not a finding.
 
+## 7. Parcel level: enrolled forest pixels against matched pixels
+
+Basin averaging dilutes any effect confined to agreement land, so the first stage was
+also tested where the programme acts (`examples/socio_bosque_parcels.py`;
+`results/socio_bosque_parcel*.csv`).
+
+**Design.**
+
+- **Treated:** 19,988 random points inside agreements (60 m inside the boundary),
+  area-weighted, plus 3 points in each of 2,208 individual agreements, which area
+  weighting otherwise misses. Mangrove agreements are excluded.
+- **Controls:** 59,916 random points in mainland Ecuador at least 1 km from any
+  agreement. Protected areas and non-forest (tree cover in 2000 < 30%) are dropped
+  from both groups.
+- **Matching:** 1:1 nearest neighbour (Mahalanobis), exact on region and signing
+  cohort (2009–2015), on travel time to cities (2015), distance to forest edge (2000),
+  slope, elevation, tree cover, and 2001–04 forest loss within 1 km and 5 km.
+- **Outcome:** the annual Hansen loss hazard after signing, among pixels still
+  forested at signing.
+- **Falsification:** the same comparison in the 4 years *before* signing, re-matched
+  among pixels forested 4 years earlier. The matching uses only 2001–04 information,
+  so it cannot have absorbed the pre-window.
+- **Inference:** bootstrap over agreements (999 draws).
+
+**Balance is near perfect.** Before matching, treated pixels were far more remote,
+deeper inside forest and under less local clearing pressure (SMD 0.5–1.2). After
+matching, every covariate is within 0.01 SD for the area sample and 0.02 SD for
+individual agreements.
+
+**Results** (loss hazard in % of pixels per year; the gap is treated minus control):
+
+| Scope | Agreements | Post gap [90% CI] | Pre gap [90% CI] | Change in gap [90% CI] | Ratio of ratios [90% CI] |
+|---|---|---|---|---|---|
+| **All regions** (area sample) | 565 | −0.027 [−0.048, −0.012] | −0.010 [−0.032, +0.006] | **−0.017 [−0.043, +0.004]** | 0.53 [0.16, 1.43] |
+| Amazon | 142 | −0.021 [−0.044, −0.007] | −0.009 [−0.030, +0.005] | −0.012 [−0.037, +0.009] | 0.79 [0.17, 3.39] |
+| Collective agreements | 111 | −0.018 [−0.038, −0.006] | −0.004 [−0.022, +0.010] | −0.014 [−0.038, +0.006] | 0.55 [0.13, 1.69] |
+| **Individual agreements** | 1,896 | −0.253 [−0.294, −0.213] | −0.216 [−0.283, −0.159] | **−0.037 [−0.109, +0.037]** | 1.02 [0.52, 2.53] |
+| Individual, Andes | 986 | −0.089 [−0.129, −0.048] | −0.038 [−0.099, +0.023] | −0.051 [−0.123, +0.024] | 0.59 [0.17, 1.98] |
+
+Treated hazards in the area sample are tiny: 0.014%/yr after signing against 0.041%/yr
+for matched controls. Coast, Andes (area sample) and Amazonian individual agreements
+have too few loss events for usable estimates.
+
+**What this shows.**
+
+- **A naive post-enrollment comparison would claim large avoided deforestation:**
+  treated pixels lose forest at a third of the matched-control rate overall, and at
+  15% of it in individual agreements. Almost all of that gap was already there before
+  enrollment. For individual agreements, matched controls on the same terrain, at the
+  same distance from cities and forest edge, and under the same local clearing
+  pressure lost forest about 7× faster *before* signing. Landholders enroll forest
+  they were not going to clear, for reasons no satellite covariate captures.
+- **Net of the pre-existing gap, the point estimates are negative but not
+  significant** on the difference or the ratio scale, in every scope. The bound is
+  informative: on enrolled forest, avoided loss is at most about 0.04 pp/yr (lower
+  limit of the main interval). Over 15 years that is at most about 0.6% of enrolled
+  forest.
+- **Precision is limited by rare events, not sample size.** The main comparison rests
+  on 22 losses in treated pixels against 65 in controls after signing, and 9 against 14
+  in the 4-year pre-window. Ten times more points would narrow the intervals about
+  threefold. That is feasible with the same batch extraction, but the pre-window
+  would still contain few events.
+
+**Hydrological implication.** Even at the bound, saving 0.6% of enrolled forest over 15
+years, in a basin that is half enrolled, changes basin forest cover by about 0.3%. That
+is far below anything the basin panel can detect in ET (±3.5 mm/yr resolution) or water
+yield. The parcel analysis closes the loop: the programme's land-cover effect, if any,
+is too small to have a measurable hydrological consequence at catchment scale.
+
 ## Caveats
 
 - **Survivorship:** only currently active agreements are published. Basins whose
   agreements ended, possibly after clearing, are missing from the treated group. That
   biases toward finding avoided loss, which the best-matched designs still do not find.
 - **Treatment timing** uses signing dates. Payments and on-the-ground enforcement may lag.
-- **Basin scale:** effects inside agreement boundaries could exist and still be diluted
-  below detection at 138 km² basin scale, especially at the 20% threshold. A parcel-level
-  analysis (agreement polygons against matched non-enrolled forest pixels) is the
-  natural next test of the first stage.
+- **Basin scale:** effects inside agreement boundaries could be diluted at 138 km² basin
+  scale. The parcel analysis (§7) addresses this and reaches the same conclusion.
+- **Parcel covariates:** travel time is a 2015 map, so it partly reflects roads built
+  after many agreements were signed. Edge distances beyond ~10 km are capped (the
+  distance transform's search limit).
 - **Hansen loss** counts only loss of 2000 forest; regrowth is not tracked.
 - **MODIS ET** is model output partly driven by vegetation indices, and coarse (500 m).
 - **EVI** was dropped: annual composites give unstable values where its denominator

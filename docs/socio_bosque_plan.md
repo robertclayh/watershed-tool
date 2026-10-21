@@ -145,8 +145,9 @@ itself worth stating against the single-basin results.
 10. ✅ Spillover checks (buffer, strict buffer, leakage) and 10% / 50% thresholds
     (`socio_bosque_analysis.py --checks`). They overturned the first-stage finding: see
     results §2 and §6.
-11. ⬜ Parcel-level first stage: agreement polygons against matched non-enrolled
-    forest pixels.
+11. ✅ Parcel-level first stage (`examples/socio_bosque_parcels.py`): agreement pixels
+    against matched non-enrolled forest pixels, with a pre-enrollment falsification
+    window. See results §7.
 
 ## Known threats
 
